@@ -1,18 +1,19 @@
 /* Import Space Grotesk font */
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap");
 
-/* CSS Variables for easy theme customization */
 :root {
   --background-color: #000000;
   --card-background: #0a0a0a;
   --gauge-background: #1a1a1a;
-  --gauge-gradient-start: #4b0082;
-  --gauge-gradient-end: #8a2be2;
+  --gauge-gradient-start: #000000;
+  --gauge-gradient-end: #6A26C8;
   --gauge-text: #ffffff;
+  --gauge-label-text: #474747;
+  --gauge-text-highlight: #A26DEC;
   --gauge-grid-line: #333333;
   --gauge-center-point: #ffffff;
   --input-border: #333333;
-  --input-focus-border: #8a2be2;
+  --input-focus-border: #6A26C8;
   --input-background: #1a1a1a;
   --input-text: #ffffff;
   --input-placeholder: #666666;
@@ -35,12 +36,12 @@
 }
 
 .gauge-card {
-  background-color: var(--card-background);
+  /* background-color: var(--card-background); */
   border-radius: 16px;
   padding: clamp(16px, 4vw, 32px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   width: 100%;
-  max-width: 500px;
+  max-width: 600px;
 }
 
 .gauge-content {
@@ -51,6 +52,7 @@
 }
 
 .gauge-chart-container {
+  overflow: visible;
   position: relative;
   width: 100%;
 }
@@ -68,7 +70,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transform: translate(0%, -50%);
+  transform: translate(0%, -50%) scale(125%);
 }
 
 .value-display {
@@ -84,7 +86,7 @@
 
 .gauge-input {
   width: 100%;
-  max-width: clamp(160px, 50vw, 200px);
+  /* max-width: clamp(160px, 50vw, 200px); */
   background-color: var(--input-background);
   border: 1px solid var(--input-border);
   border-radius: 8px;
@@ -136,7 +138,7 @@
     var(--gauge-gradient-end)
   );
   width: 100%;
-  max-width: clamp(160px, 50vw, 200px);
+  /* max-width: clamp(160px, 50vw, 200px); */
   border: none;
   border-radius: 8px;
   color: white;
@@ -150,7 +152,7 @@
 
 .randomize-button:hover {
   opacity: 0.9;
-  transform: translateY(-1px);
+  transform: translateY(-1px) scale(98%);
 }
 
 .randomize-button:active {

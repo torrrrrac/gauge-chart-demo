@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { PieChart, Pie } from "recharts";
 import { setGaugeValue, setRandomValue } from "./gaugeSlice";
@@ -8,6 +8,8 @@ const GaugeChart = () => {
   const gaugeValue = useSelector((state) => state.gauge.value);
   const dispatch = useDispatch();
   const [inputValue, setInputValue] = useState("");
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const containerRef = useRef(null);
 
   // Load saved value on component mount
   useEffect(() => {
@@ -21,6 +23,33 @@ const GaugeChart = () => {
   useEffect(() => {
     localStorage.setItem("gaugeValue", gaugeValue.toString());
   }, [gaugeValue]);
+
+  // Handle resize
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.offsetWidth;
+        const chartWidth = Math.min(containerWidth, 500); // Limit maximum width
+        setDimensions({
+          width: chartWidth,
+          height: (chartWidth / 2) + 80 // Maintain aspect ratio plus space for value
+        });
+      }
+    };
+
+    updateDimensions();
+
+    const resizeObserver = new ResizeObserver(updateDimensions);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      if (containerRef.current) {
+        resizeObserver.unobserve(containerRef.current);
+      }
+    };
+  }, []);
 
   const angle = (gaugeValue / 100) * 180;
   const backgroundData = [{ value: 1 }];
@@ -45,32 +74,11 @@ const GaugeChart = () => {
     setInputValue("");
   };
 
-  // Responsive dimensions calculation
-  const getChartDimensions = () => {
-    const baseWidth = Math.min(window.innerWidth * 0.8, 400);
-    const baseHeight = baseWidth * 0.8;
-    return {
-      width: baseWidth,
-      height: baseHeight,
-      centerX: baseWidth / 2,
-      centerY: baseHeight / 2,
-      radius: 150,
-    };
-  };
-
-  const { width, height, centerX, centerY, radius } = getChartDimensions();
-
-  // Calculate value display position based on needle angle
-  const getValuePosition = () => {
-    const valueRadius = radius - 40; // Adjust this value to position the display
-    const valueAngle = ((180 - angle) * Math.PI) / 180;
-    return {
-      x: centerX + valueRadius * Math.cos(valueAngle),
-      y: centerY - valueRadius * Math.sin(valueAngle),
-    };
-  };
-
-  const valuePosition = getValuePosition();
+  // Calculate dimensions based on container size
+  const { width, height } = dimensions;
+  const centerX = width / 2;
+  const centerY = height - 80;
+  const radius = Math.min(width / 2, (height - 80) / 1.2);
 
   // Define labels with positions
   const labels = [
@@ -85,114 +93,118 @@ const GaugeChart = () => {
     <div className="gauge-container">
       <div className="gauge-card">
         <div className="gauge-content">
-          <div className="gauge-chart-container">
-            <PieChart width={width} height={width/2}>
-              <Pie
-                data={backgroundData}
-                cx={centerX}
-                cy={centerY}
-                startAngle={180}
-                endAngle={0}
-                innerRadius={radius - 20}
-                outerRadius={radius + 10}
-                fill="var(--gauge-background)"
-                stroke="none"
-                dataKey="value"
-              />
+          <div ref={containerRef} className="gauge-chart-container">
+            {width > 0 && (
+              <>
+                <PieChart width={width} height={height}>
+                  <Pie
+                    data={backgroundData}
+                    cx={centerX}
+                    cy={centerY}
+                    startAngle={180}
+                    endAngle={0}
+                    innerRadius={radius - 30}
+                    outerRadius={radius + 20}
+                    fill="var(--gauge-background)"
+                    stroke="none"
+                    dataKey="value"
+                    cornerRadius={10}
+                  />
 
-              <Pie
-                data={valueData}
-                cx={centerX}
-                cy={centerY}
-                startAngle={180}
-                endAngle={180 - angle}
-                innerRadius={radius - 20}
-                outerRadius={radius + 10}
-                fill="url(#gaugeGradient)"
-                stroke="none"
-                dataKey="value"
-              />
+                  <Pie
+                    data={valueData}
+                    cx={centerX}
+                    cy={centerY}
+                    startAngle={180}
+                    endAngle={180 - angle}
+                    innerRadius={radius - 30}
+                    outerRadius={radius + 20}
+                    fill="url(#gaugeGradient)"
+                    stroke="none"
+                    dataKey="value"
+                    cornerRadius={10}
+                  />
 
-              <defs>
-                <linearGradient id="gaugeGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="var(--gauge-gradient-start)" />
-                  <stop offset="100%" stopColor="var(--gauge-gradient-end)" />
-                </linearGradient>
-              </defs>
+                  <defs>
+                    <linearGradient id="gaugeGradient" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="var(--gauge-gradient-start)" />
+                      <stop offset="100%" stopColor="var(--gauge-gradient-end)" />
+                    </linearGradient>
+                  </defs>
 
-              {labels.map((label) => {
-                const labelX =
-                  centerX +
-                  label.radius * Math.cos((label.angle * Math.PI) / 180);
-                const labelY =
-                  centerY +
-                  label.radius * Math.sin((label.angle * Math.PI) / 180);
-                const lineEndX =
-                  centerX +
-                  (radius - 75) * Math.cos((label.angle * Math.PI) / 180);
-                const lineEndY =
-                  centerY +
-                  (radius - 75) * Math.sin((label.angle * Math.PI) / 180);
+                  {labels.map((label) => {
+                    const labelX =
+                      centerX +
+                      label.radius * Math.cos((label.angle * Math.PI) / 180);
+                    const labelY =
+                      centerY +
+                      label.radius * Math.sin((label.angle * Math.PI) / 180);
+                    const lineEndX =
+                      centerX +
+                      (radius - 75) * Math.cos((label.angle * Math.PI) / 180);
+                    const lineEndY =
+                      centerY +
+                      (radius - 75) * Math.sin((label.angle * Math.PI) / 180);
 
-                return (
-                  <g key={label.value}>
-                    <line
-                      x1={centerX}
-                      y1={centerY}
-                      x2={lineEndX}
-                      y2={lineEndY}
-                      stroke="var(--gauge-grid-line)"
-                      strokeWidth={0.5}
-                    />
-                    <text
-                      x={labelX}
-                      y={labelY}
-                      fill="var(--gauge-text)"
-                      fontSize="14"
-                      fontFamily="Space Grotesk"
-                      fontWeight="500"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                    >
-                      {label.value}
-                    </text>
-                  </g>
-                );
-              })}
+                    return (
+                      <g key={label.value}>
+                        <line
+                          x1={centerX}
+                          y1={centerY}
+                          x2={lineEndX}
+                          y2={lineEndY}
+                          stroke="var(--gauge-grid-line)"
+                          strokeWidth={0.5}
+                        />
+                        <text
+                          x={labelX}
+                          y={labelY}
+                          fill="var(--gauge-text)"
+                          fontSize="14"
+                          fontFamily="Space Grotesk"
+                          fontWeight="500"
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                        >
+                          {label.value}
+                        </text>
+                      </g>
+                    );
+                  })}
 
-              <circle
-                cx={centerX}
-                cy={centerY}
-                r={4}
-                fill="var(--gauge-center-point)"
-              />
-            </PieChart>
+                  <circle
+                    cx={centerX}
+                    cy={centerY}
+                    r={4}
+                    fill="var(--gauge-center-point)"
+                  />
+                </PieChart>
 
-            <div
-              className="gauge-needle"
-              style={{
-                top: `${centerY}px`,
-                left: `${centerX}px`,
-                transform: `rotate(${angle - 90}deg)`,
-                // width: "clamp(20px, 5vw, 30px)", // Smaller needle size
-                // height: "clamp(20px, 5vw, 30px)", // Smaller needle size
-              }}
-            >
-              <img src="/needle.svg" alt="gauge needle" />
-              <div
-              className="value-display"
-              style={{
-                position: "absolute",
-                transform: "translate(-50%, -600%)",
-                fontSize: "clamp(20px, 5vw, 28px)", // Larger font size
-                fontWeight: "700", // Bolder text
-              }}
-            >
-              {gaugeValue}%
-            </div>
-            </div>
-
-            
+                <div
+                  className="gauge-needle"
+                  style={{
+                    top: `${centerY}px`,
+                    left: `${centerX}px`,
+                    transform: `translate(-50%, -50%) rotate(${angle - 90}deg)`,
+                  }}
+                >
+                  <img src="/needle.svg" alt="gauge needle" />
+                  <div
+                    className="value-display"
+                    style={{
+                      position: "absolute",
+                      top: "-120px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      fontSize: "clamp(20px, 5vw, 28px)",
+                      fontWeight: "700",
+                    }}
+                  >
+                    {gaugeValue}%
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="input-container">
@@ -203,8 +215,8 @@ const GaugeChart = () => {
               placeholder="Enter value (0-100)"
               className="gauge-input"
               style={{
-                fontSize: "clamp(16px, 4vw, 20px)", // Larger font size
-                fontWeight: "600", // Bolder text
+                fontSize: "clamp(16px, 4vw, 20px)",
+                fontWeight: "600",
               }}
             />
             <button onClick={handleRandomClick} className="randomize-button">
